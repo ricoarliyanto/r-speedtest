@@ -1,0 +1,388 @@
+use super::web_path::{WebPath, WebPathType};
+use crate::service::wechat::*;
+
+use axum::{
+    routing::{delete, get, post, put},
+    Router,
+};
+
+pub fn router_wechat() -> WebPath {
+    WebPath::new().nest(
+        "/wechat",
+        WebPath::new()
+            .nest("/wxaccounts", wx_accounts())
+            .nest("/wxautoreplies", wx_auto_replies())
+            .nest("/wxmaterials", wx_materials())
+            .nest("/wxmenus", wx_menus())
+            .nest("/wxmessages", wx_messages())
+            .nest("/wxusers", wx_users())
+            .nest("/wxtemplates", wx_templates())
+            .nest("/wxpay", wx_pay()),
+    )
+}
+
+pub fn white_wechat() -> Router {
+    Router::new().nest(
+        "/wechat",
+        Router::new()
+            // 微信公众号验证与回调（微信服务器调用，无 JWT）
+            .route(
+                "/official_account/callback",
+                get(official_account_service::official_account_get)
+                    .post(official_account_service::official_account),
+            )
+            // 微信支付回调通知（微信服务器调用，无 JWT）
+            .route(
+                "/wxpay/notify/{account_id}",
+                post(s_wx_pay::pay_notify),
+            ),
+    )
+}
+
+fn wx_accounts() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信公众号列表"),
+            get(s_wx_accounts::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信公众号"),
+            post(s_wx_accounts::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信公众号"),
+            put(s_wx_accounts::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信公众号"),
+            delete(s_wx_accounts::delete),
+        )
+}
+
+fn wx_auto_replies() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取自动回复列表"),
+            get(s_wx_auto_replies::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加自动回复"),
+            post(s_wx_auto_replies::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑自动回复"),
+            put(s_wx_auto_replies::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除自动回复"),
+            delete(s_wx_auto_replies::delete),
+        )
+}
+
+fn wx_materials() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信素材列表"),
+            get(s_wx_materials::list),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信素材"),
+            post(s_wx_materials::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信素材"),
+            put(s_wx_materials::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信素材"),
+            delete(s_wx_materials::delete),
+        )
+        .route(
+            "/upload_temp_media",
+            WebPathType::Post,
+            Some("上传临时素材到微信"),
+            post(s_wx_materials::upload_temp_media),
+        )
+        .route(
+            "/upload_permanent_media",
+            WebPathType::Post,
+            Some("上传永久素材到微信"),
+            post(s_wx_materials::upload_permanent_media),
+        )
+        .route(
+            "/upload_news",
+            WebPathType::Post,
+            Some("上传永久图文素材到微信"),
+            post(s_wx_materials::upload_news),
+        )
+        .route(
+            "/sync_materials",
+            WebPathType::Post,
+            Some("从微信同步素材到本地"),
+            post(s_wx_materials::sync_materials),
+        )
+        .route(
+            "/material_count",
+            WebPathType::Post,
+            Some("获取微信素材计数"),
+            post(s_wx_materials::material_count),
+        )
+        .route(
+            "/delete_remote_media",
+            WebPathType::Post,
+            Some("删除微信服务器上的永久素材"),
+            post(s_wx_materials::delete_remote_media),
+        )
+        .route(
+            "/upload_file",
+            WebPathType::Post,
+            Some("上传文件到服务器本地"),
+            post(s_wx_materials::upload_file),
+        )
+}
+
+fn wx_menus() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信菜单列表"),
+            get(s_wx_menus::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信菜单"),
+            post(s_wx_menus::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信菜单"),
+            put(s_wx_menus::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信菜单"),
+            delete(s_wx_menus::delete),
+        )
+        .route(
+            "/pull_menu",
+            WebPathType::Post,
+            Some("发布菜单到微信"),
+            post(s_wx_menus::pull_menu),
+        )
+        .route(
+            "/sync_menu",
+            WebPathType::Post,
+            Some("从微信同步菜单到本地"),
+            post(s_wx_menus::sync_menu),
+        )
+        .route(
+            "/delete_remote_menu",
+            WebPathType::Post,
+            Some("删除微信服务器上的自定义菜单"),
+            post(s_wx_menus::delete_remote_menu),
+        )
+}
+
+fn wx_messages() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信消息列表"),
+            get(s_wx_messages::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信消息"),
+            post(s_wx_messages::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信消息"),
+            put(s_wx_messages::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信消息"),
+            delete(s_wx_messages::delete),
+        )
+        .route(
+            "/conversation",
+            WebPathType::Get,
+            Some("获取会话消息列表"),
+            get(s_wx_messages::conversation),
+        )
+        .route(
+            "/reply",
+            WebPathType::Post,
+            Some("手动回复消息"),
+            post(s_wx_messages::reply_message),
+        )
+        .route(
+            "/stream",
+            WebPathType::Get,
+            Some("SSE消息推送"),
+            get(s_wx_messages::message_stream),
+        )
+}
+
+fn wx_users() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信用户列表"),
+            get(s_wx_users::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信用户"),
+            post(s_wx_users::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信用户"),
+            put(s_wx_users::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信用户"),
+            delete(s_wx_users::delete),
+        )
+}
+
+fn wx_templates() -> WebPath {
+    WebPath::new()
+        .route(
+            "/list",
+            WebPathType::Get,
+            Some("获取微信模板列表"),
+            get(s_wx_templates::list_tree),
+        )
+        .route(
+            "/add",
+            WebPathType::Post,
+            Some("添加微信模板"),
+            post(s_wx_templates::add),
+        )
+        .route(
+            "/edit",
+            WebPathType::Put,
+            Some("编辑微信模板"),
+            put(s_wx_templates::edit),
+        )
+        .route(
+            "/del",
+            WebPathType::Delete,
+            Some("删除微信模板"),
+            delete(s_wx_templates::delete),
+        )
+        .route(
+            "/sync",
+            WebPathType::Post,
+            Some("从微信服务器同步模板"),
+            post(s_wx_templates::sync_templates),
+        )
+        .route(
+            "/send",
+            WebPathType::Post,
+            Some("发送模板消息"),
+            post(s_wx_templates::send_template),
+        )
+        .route(
+            "/logs",
+            WebPathType::Get,
+            Some("获取模板发送日志"),
+            get(s_wx_templates::list_logs),
+        )
+}
+
+fn wx_pay() -> WebPath {
+    WebPath::new()
+        .route(
+            "/orders",
+            WebPathType::Get,
+            Some("获取支付订单列表"),
+            get(s_wx_pay::list_orders),
+        )
+        .route(
+            "/refunds",
+            WebPathType::Get,
+            Some("获取退款列表"),
+            get(s_wx_pay::list_refunds),
+        )
+        .route(
+            "/create_order",
+            WebPathType::Post,
+            Some("创建支付订单"),
+            post(s_wx_pay::create_order),
+        )
+        .route(
+            "/query_order",
+            WebPathType::Post,
+            Some("查询订单状态"),
+            post(s_wx_pay::query_order),
+        )
+        .route(
+            "/close_order",
+            WebPathType::Post,
+            Some("关闭订单"),
+            post(s_wx_pay::close_order),
+        )
+        .route(
+            "/refund",
+            WebPathType::Post,
+            Some("申请退款"),
+            post(s_wx_pay::refund),
+        )
+}
+
+fn official_account_api() -> WebPath {
+    WebPath::new()
+        .route(
+            "/callback",
+            WebPathType::Post,
+            Some("微信公众号消息回调"),
+            post(official_account_service::official_account),
+        )
+        .route(
+            "/verify",
+            WebPathType::Get,
+            Some("微信公众号验证"),
+            get(official_account_service::official_account_get),
+        )
+}

@@ -1,0 +1,125 @@
+version: "3.8"
+
+services:
+  # 1. Primary PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: rspeedtest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: qiluo
+      POSTGRES_PASSWORD: qiluo_secure_password_2026
+      POSTGRES_DB: qiluo_net
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./qiluo_admin/qiluo_pg.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qiluo -d qiluo_net"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rspeedtest-net
+
+  # 2. DragonflyDB - Ultra-High-Performance Redis Alternative
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: rspeedtest-dragonfly
+    restart: unless-stopped
+    ulimits:
+      memlock: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonflydata:/data
+    command:
+      - "--logtostderr"
+      - "--dir=/data"
+      - "--proactor_threads=2"
+      - "--maxmemory=2GB"
+    networks:
+      - rspeedtest-net
+
+  # 3. QiLuo Application Server (Web API & UI)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: rspeedtest-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_started
+    environment:
+      - RUST_LOG=info,qiluo=debug
+      - DATABASE_URL=postgres://qiluo:qiluo_secure_password_2026@postgres:5432/qiluo_net?currentSchema=qiluoopen
+      - REDIS_URL=redis://dragonfly:6379/
+      - APP_PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - pcap_data:/var/log/r-speedtest/pcaps
+    networks:
+      - rspeedtest-net
+
+  # 4. Dedicated Network Diagnostic Worker Container
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: rspeedtest-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_started
+    environment:
+      - RUST_LOG=info,qiluo=debug
+      - DATABASE_URL=postgres://qiluo:qiluo_secure_password_2026@postgres:5432/qiluo_net?currentSchema=qiluoopen
+      - REDIS_URL=redis://dragonfly:6379/
+      - IS_WORKER_ONLY=true
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - pcap_data:/var/log/r-speedtest/pcaps
+    networks:
+      - rspeedtest-net
+
+  # 5. Reverse Proxy with Auto-HTTPS & WSS Upgrade
+  caddy:
+    image: caddy:2-alpine
+    container_name: rspeedtest-caddy
+    restart: unless-stopped
+    ports:
+      - "8030:8030"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - rspeedtest-net
+
+volumes:
+  pgdata:
+  dragonflydata:
+  pcap_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  rspeedtest-net:
+    driver: bridge

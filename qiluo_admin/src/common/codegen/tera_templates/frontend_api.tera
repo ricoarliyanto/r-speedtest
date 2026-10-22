@@ -1,0 +1,24 @@
+import request from '@/axios'
+
+export enum {{model_name}}Api {
+  list = '/{{module_name}}/{{entity_mod_name}}/list',
+  add = '/{{module_name}}/{{entity_mod_name}}/add',
+  edit = '/{{module_name}}/{{entity_mod_name}}/edit',
+  del = '/{{module_name}}/{{entity_mod_name}}/del'
+}
+
+export const Get{{model_name}}List = (params: any) => {
+  return request.get({ url: {{model_name}}Api.list, params })
+}
+
+export const Add{{model_name}} = (data: any) => {
+  return request.post({ url: {{model_name}}Api.add, data })
+}
+
+export const Edit{{model_name}} = (data: any) => {
+  return request.put({ url: {{model_name}}Api.edit, data })
+}
+
+export const Del{{model_name}} = (params: any) => {
+  return request.delete({ url: {{model_name}}Api.del, params })
+}

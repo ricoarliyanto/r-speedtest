@@ -1,0 +1,10 @@
+pub mod awx_accounts;
+pub mod awx_auto_replies;
+pub mod awx_materials;
+pub mod awx_menus;
+pub mod awx_messages;
+pub mod awx_pay_orders;
+pub mod awx_pay_refunds;
+pub mod awx_template_logs;
+pub mod awx_templates;
+pub mod awx_users;

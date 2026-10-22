@@ -1,0 +1,26 @@
+use super::validatedjson::ServerError;
+use axum::{
+    extract::{FromRequestParts, Query},
+    http::request::Parts,
+};
+use serde::de::DeserializeOwned;
+use validator::Validate;
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct VQuery<T>(pub T);
+
+impl<T, S> FromRequestParts<S> for VQuery<T>
+where
+    T: DeserializeOwned + Validate,
+    S: Send + Sync,
+{
+    type Rejection = ServerError;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let Query(value) = Query::<T>::from_request_parts(parts, _state).await?;
+        value.validate()?;
+        Ok(VQuery(value))
+    }
+}
+axum_core::__impl_deref!(VQuery);
+
+

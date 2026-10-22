@@ -1,0 +1,109 @@
+# Web server configuration
+server:
+  # The server domain name.
+  domainname: http://localhost:8030
+  # Port on which the server will listen. the server binding is 0.0.0.0:{PORT}
+  port: {{ get_env(name="APP_PORT", default="3000") }}
+  # The UI hostname or IP address that mailers will point to.
+  host: 0.0.0.0
+  # The directory where the static files will be served from.
+  static_dir: dist
+  # The directory where the web files will be served from.
+  web_dir: dist
+  # The directory where the upload files will be served from.
+  upload_dir: data/upload
+  # SSl configuration
+  ssl:
+    enable: false
+    key: data/ssl/key.pem
+    cert: data/ssl/cert.pem
+  # Out of the box middleware configuration
+  middlewares:
+    etag:
+      enable: true
+    limit_payload:
+      enable: true
+      body_limit: 100mb
+    logger:
+      enable: true
+    catch_panic:
+      enable: true
+    timeout_request:
+      enable: false
+      timeout: 5000
+    cors:
+      enable: true
+      allow_origins:
+        - http://localhost:8030
+        - http://localhost:4000
+      max_age: 3600
+
+# Worker Configuration
+workers:
+  queues:
+    - default
+    - mailer
+    - net_tool
+    - net_scenario
+    - net_node_hb
+  num_workers: 4
+
+# Database Configuration
+databases:
+  - name: primary
+    uri: {{ get_env(name="DATABASE_URL", default="postgres://qiluo:qiluo_secure_password_2026@postgres:5432/qiluo_net?currentSchema=qiluoopen") }}
+    max_connections: 16
+    min_connections: 2
+    connect_timeout: 3000
+    idle_timeout: 300000
+    enable_logging: false
+
+db_routing:
+  default: "primary"
+  write:   "primary"
+  reads:   ["primary"]
+  read_strategy: "round_robin"
+  fallback_to_write: true
+
+# Application logging configuration
+logger:
+  enable: true
+  pretty_backtrace: true
+  level: info
+  format: compact
+  log_file_cache: true
+  log_dir: data/log
+  file_name: app_log
+
+cache:
+  cache_type: redis
+  namespace: qiluo  
+  pool_size: 12
+  url: {{ get_env(name="REDIS_URL", default="redis://dragonfly:6379/") }}
+
+# Mailer Configuration
+mailer:
+  stub: true
+  smtp:
+    enable: false
+    host: smtp.163.com
+    port: 465
+    secure: true
+    auth:
+      user: xx@163.com
+      password: xxxxxx
+    from: "QiLuo Telemetry <noreply@speedtest.local>"
+
+# Authentication Configuration
+auth:
+  jwt:
+    secret: arxWd8PStcwb0jyRBENMQVE4Mn6T89Sl
+    expiration: 604800 # 7 days
+
+snowgenera:
+  machine_id: 1001
+  node_id: 1
+
+system:
+  super_role:
+    - 1

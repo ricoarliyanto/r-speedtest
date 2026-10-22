@@ -1,0 +1,15 @@
+:8030 {
+    # Auto-compression
+    encode zstd gzip
+
+    # WebSocket Telemetry Proxy
+    @ws {
+        header Connection *Upgrade*
+        header Upgrade    websocket
+        path /api/net/ws*
+    }
+    reverse_proxy @ws app:3000
+
+    # Proxy all HTTP / API / SPA requests to Axum
+    reverse_proxy app:3000
+}

@@ -1,0 +1,10 @@
+pub mod official_account_service;
+pub mod wechat_sdk;
+pub mod s_wx_accounts;
+pub mod s_wx_auto_replies;
+pub mod s_wx_materials;
+pub mod s_wx_menus;
+pub mod s_wx_messages;
+pub mod s_wx_pay;
+pub mod s_wx_templates;
+pub mod s_wx_users;

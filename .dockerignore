@@ -1,0 +1,9 @@
+target/
+qiluo_admin/target/
+node_modules/
+qiluo_vue/node_modules/
+qiluo_vue/dist/
+.git/
+.cargo/
+*.pcap
+*.log

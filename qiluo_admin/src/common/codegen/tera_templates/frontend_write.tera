@@ -1,0 +1,59 @@
+<script setup lang="tsx">
+import { Form, FormSchema } from '@/components/Form'
+import { useForm } from '@/hooks/web/useForm'
+import { PropType, reactive, watch, ref } from 'vue'
+import { useI18n } from '@/hooks/web/useI18n'
+{{upload_imports_text}}
+const { t } = useI18n()
+
+{{upload_setup_text}}
+
+const props = defineProps({
+  currentRow: {
+    type: Object as PropType<any>,
+    default: () => null
+  }
+})
+
+const formSchema = ref<FormSchema[]>([
+{{form_columns}}
+])
+
+{{form_rules}}
+
+const { formRegister, formMethods } = useForm()
+const { setValues, getFormData, getElFormExpose } = formMethods
+
+const submit = async () => {
+  const elForm = await getElFormExpose()
+  const valid = await elForm?.validate().catch((err) => {
+    console.log(err)
+  })
+  if (valid) {
+    const formData = await getFormData()
+{{upload_submit_text}}
+    return formData
+  }
+}
+
+watch(
+  () => props.currentRow,
+  (currentRow) => {
+    if (!currentRow) return
+{{upload_watch_text}}
+    setValues(currentRow)
+  },
+  {
+    deep: true,
+    immediate: true
+  }
+)
+
+defineExpose({
+  submit
+})
+</script>
+
+<template>
+  <Form @register="formRegister" :schema="formSchema" :rules="rules" />
+</template>
